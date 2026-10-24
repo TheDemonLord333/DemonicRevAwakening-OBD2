@@ -83,7 +83,7 @@ final class OBDSession {
         var ecuRelockAfterMisses = 3
     }
 
-    let configuration: Configuration
+    var configuration: Configuration
     private let transport: OBDTransport
     private var assembler = ELM327ResponseAssembler()
     private let inFlight = PendingOperation<ELM327Reply>()

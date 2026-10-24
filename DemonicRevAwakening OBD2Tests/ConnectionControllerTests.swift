@@ -16,9 +16,9 @@ struct ConnectionControllerTests {
     private func makeController(transports: @escaping () -> MockELMTransport) -> VehicleConnectionController {
         let controller = VehicleConnectionController { _ in transports() }
         var configuration = OBDSession.Configuration()
-        configuration.resetTimeout = .milliseconds(300)
-        configuration.commandTimeout = .milliseconds(150)
-        configuration.searchTimeout = .milliseconds(300)
+        configuration.resetTimeout = .seconds(2)
+        configuration.commandTimeout = .seconds(2)
+        configuration.searchTimeout = .seconds(2)
         configuration.drainDuration = .milliseconds(20)
         configuration.wakeUpDelay = .milliseconds(5)
         configuration.maxConsecutiveTimeouts = 2

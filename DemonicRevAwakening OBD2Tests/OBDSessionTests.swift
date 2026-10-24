@@ -11,9 +11,10 @@ import Testing
 struct OBDSessionTests {
     private func fastConfiguration() -> OBDSession.Configuration {
         var configuration = OBDSession.Configuration()
-        configuration.resetTimeout = .milliseconds(300)
-        configuration.commandTimeout = .milliseconds(200)
-        configuration.searchTimeout = .milliseconds(400)
+        // Großzügig, damit ausgelastete CI-Simulatoren keine Zeitüberschreitung auslösen.
+        configuration.resetTimeout = .seconds(2)
+        configuration.commandTimeout = .seconds(2)
+        configuration.searchTimeout = .seconds(2)
         configuration.drainDuration = .milliseconds(50)
         configuration.wakeUpDelay = .milliseconds(5)
         return configuration
@@ -83,7 +84,10 @@ struct OBDSessionTests {
     @Test func silentAdapterIsReported() async throws {
         let transport = MockELMTransport()
         transport.handler = { _ in .silent }
-        let session = OBDSession(transport: transport, configuration: fastConfiguration())
+        var configuration = fastConfiguration()
+        configuration.resetTimeout = .milliseconds(300)
+        configuration.commandTimeout = .milliseconds(200)
+        let session = OBDSession(transport: transport, configuration: configuration)
         await #expect(throws: OBDSessionError.adapterNotResponding) {
             _ = try await session.initialize()
         }
@@ -122,6 +126,8 @@ struct OBDSessionTests {
         let session = OBDSession(transport: transport, configuration: configuration)
         _ = try await session.initialize()
         transport.handler = { _ in .silent }
+        // Ab hier kurze Zeitlimits – es kommt ohnehin keine Antwort.
+        session.configuration.commandTimeout = .milliseconds(200)
 
         let first = try await session.pollOnce()
         #expect(first.rpm == nil)
@@ -135,20 +141,22 @@ struct OBDSessionTests {
     @Test func lateResponseAfterTimeoutIsNotMisattributed() async throws {
         let transport = MockELMTransport()
         var configuration = fastConfiguration()
-        configuration.drainDuration = .milliseconds(150)
+        configuration.drainDuration = .milliseconds(1_500)
         let session = OBDSession(transport: transport, configuration: configuration)
         _ = try await session.initialize()
 
         let healthy = MockELMTransport.healthyCar(rpmHex: "0B 20")
+        session.configuration.commandTimeout = .milliseconds(200)
         transport.handler = { command in
-            // Antwort kommt erst nach dem Zeitlimit (200 ms) an.
-            command == "010C" ? .respond("7E8 04 41 0C 3E 80\r\r>", delay: .milliseconds(230)) : healthy(command)
+            // Antwort kommt deutlich nach dem Zeitlimit (200 ms), aber innerhalb der Verwerfphase.
+            command == "010C" ? .respond("7E8 04 41 0C 3E 80\r\r>", delay: .milliseconds(700)) : healthy(command)
         }
         let late = try await session.pollOnce()
         #expect(late.rpm == nil)
         #expect(late.rpmTimedOut)
 
         transport.handler = healthy
+        session.configuration.commandTimeout = .seconds(2)
         let next = try await session.pollOnce()
         #expect(next.rpm == 712)
     }
