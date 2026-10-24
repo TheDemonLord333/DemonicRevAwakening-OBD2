@@ -140,7 +140,7 @@ struct RPMReadout: View {
                 .foregroundStyle(Theme.color(for: frame.mood))
                 .contentTransition(.opacity)
                 .animation(.easeInOut(duration: 0.4), value: frame.mood)
-            if !compact {
+            if !compact || !freshness.isFresh {
                 Text(detailText(freshness: freshness, mood: frame.mood))
                     .font(.footnote)
                     .foregroundStyle(Theme.textSecondary)

@@ -91,6 +91,8 @@ struct DemonButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
             .foregroundStyle(kind == .primary ? Color.black : Theme.textPrimary)
             .padding(.horizontal, 18)
             .frame(minHeight: 50)

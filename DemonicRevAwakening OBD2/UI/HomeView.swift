@@ -40,6 +40,7 @@ struct RootView: View {
         .statusBarHidden(isFocusMode)
         .persistentSystemOverlays(isFocusMode ? .hidden : .automatic)
         .onAppear {
+            if model.debugStartsInFocusMode { isFocusMode = true }
             model.setReduceMotion(reduceMotion)
             model.updateIdleTimer(isActive: scenePhase == .active)
         }
@@ -107,11 +108,13 @@ struct HomeView: View {
     // MARK: - Hochformat
 
     private var portraitLayout: some View {
-        VStack(spacing: 14) {
+        let isDemo = model.connection.mode == .demo
+        return VStack(spacing: isDemo ? 8 : 14) {
             header
             DemonStage()
                 .frame(maxHeight: .infinity)
-            RPMReadout()
+                .layoutPriority(1)
+            RPMReadout(compact: isDemo)
             MetricsRow()
             ConnectionAlertBanner()
             controls
@@ -204,16 +207,17 @@ struct HomeView: View {
                 iconButton("gearshape.fill", label: "Einstellungen", action: showSettings)
             }
             HStack {
-                ConnectionStatusPill()
-                Spacer(minLength: 0)
-            }
-            HStack {
-                AdapterInfoLine()
-                Spacer(minLength: 0)
-            }
-            if model.connection.mode == .demo {
-                HStack {
+                // Im Demo-Modus ersetzt die deutliche Demo-Kennzeichnung die Statusanzeige.
+                if model.connection.mode == .demo {
                     DemoBadge()
+                } else {
+                    ConnectionStatusPill()
+                }
+                Spacer(minLength: 0)
+            }
+            if model.connection.mode == .live {
+                HStack {
+                    AdapterInfoLine()
                     Spacer(minLength: 0)
                 }
             }
@@ -261,6 +265,13 @@ struct HomeView: View {
                         connection.startDemo()
                     } label: {
                         Label("Demo", systemImage: "play.fill")
+                    }
+                    .buttonStyle(DemonButtonStyle(kind: .secondary))
+                } else if connection.mode == .demo {
+                    Button {
+                        connection.stopDemo()
+                    } label: {
+                        Label("Demo beenden", systemImage: "stop.fill")
                     }
                     .buttonStyle(DemonButtonStyle(kind: .secondary))
                 }
@@ -331,7 +342,7 @@ struct DemoControlPanel: View {
     var body: some View {
         let connection = model.connection
         let demo = connection.demo
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Picker("Demo-Modus", selection: Binding(get: { demo.mode },
                                                     set: { connection.setDemoMode($0) })) {
                 ForEach(DemoEngine.Mode.allCases, id: \.self) { mode in
@@ -342,7 +353,7 @@ struct DemoControlPanel: View {
 
             switch demo.mode {
             case .manual:
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text("Simulierte Drehzahl: \(RPMReadout.rpmText(demo.manualTargetRPM, freshness: .fresh)) RPM")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Theme.textSecondary)
@@ -383,15 +394,8 @@ struct DemoControlPanel: View {
                     .accessibilityLabel("Demo neu starten")
                 }
             }
-
-            Button {
-                connection.stopDemo()
-            } label: {
-                Label("Demo beenden", systemImage: "stop.fill")
-            }
-            .buttonStyle(DemonButtonStyle(kind: .secondary))
         }
-        .padding(14)
+        .padding(12)
         .glassPanel(cornerRadius: 20)
     }
 }

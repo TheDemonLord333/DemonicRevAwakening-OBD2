@@ -27,6 +27,8 @@ final class AppModel {
     let presentation = DemonPresentation()
     @ObservationIgnored let demonScene: DemonScene
 
+    /// Nur Debug: `-focus` startet im reduzierten Vollbildmodus (Screenshots).
+    @ObservationIgnored let debugStartsInFocusMode: Bool
     @ObservationIgnored private var originalIdleTimerDisabled: Bool?
     @ObservationIgnored private var reduceMotion = false
 
@@ -47,6 +49,11 @@ final class AppModel {
         self.bluetooth = bluetooth
         self.connection = connection
         self.demonScene = scene
+        #if DEBUG
+        debugStartsInFocusMode = ProcessInfo.processInfo.arguments.contains("-focus")
+        #else
+        debugStartsInFocusMode = false
+        #endif
 
         bluetooth.profilesProvider = { [weak settings] in
             settings?.availableBLEProfiles ?? BLEAdapterProfile.builtIn

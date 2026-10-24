@@ -70,10 +70,17 @@ jobs:
           xcrun simctl launch --terminate-running-process "$UDID" me.thedemonlord333.DemonicRevAwakening-OBD2
           sleep 5
           xcrun simctl io "$UDID" screenshot "screenshots/start-nicht-verbunden.png"
+          for RPM in 0 1600 6200; do
+            xcrun simctl launch --terminate-running-process "$UDID" me.thedemonlord333.DemonicRevAwakening-OBD2 -demoRPM "$RPM" -focus
+            sleep 6
+            xcrun simctl io "$UDID" screenshot "screenshots/vollbild-$RPM.png"
+          done
           ls -la screenshots
           # Kleine JPEG-Vorschauen als Base64 ins Log (für Umgebungen ohne Artefakt-Zugriff).
           for f in screenshots/*.png; do
-            sips -s format jpeg -s formatOptions 55 -Z 420 "$f" --out "${f%.png}.jpg" >/dev/null
+            SIZE=420
+            case "$f" in *vollbild*) SIZE=900 ;; esac
+            sips -s format jpeg -s formatOptions 60 -Z "$SIZE" "$f" --out "${f%.png}.jpg" >/dev/null
             echo "BEGIN-SCREENSHOT $(basename "${f%.png}")"
             base64 -i "${f%.png}.jpg" | fold -w 900
             echo "END-SCREENSHOT"
