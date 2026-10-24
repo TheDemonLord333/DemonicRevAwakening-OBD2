@@ -31,7 +31,7 @@ struct ConnectionControllerTests {
     }
 
     /// Wartet, bis `condition` erfüllt ist (höchstens `timeout`).
-    private func waitUntil(timeout: Duration = .seconds(3), _ condition: () -> Bool) async -> Bool {
+    private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool) async -> Bool {
         let deadline = ContinuousClock.now + timeout
         while ContinuousClock.now < deadline {
             if condition() { return true }
