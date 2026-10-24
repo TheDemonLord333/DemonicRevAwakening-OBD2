@@ -69,6 +69,21 @@ final class AppModel {
             }
         }
         applySettings()
+        applyDebugLaunchArguments()
+    }
+
+    /// Nur in Debug-Builds: `-demoRPM <Wert>` startet die manuelle Demo mit
+    /// fester Drehzahl (für reproduzierbare Simulator-Screenshots).
+    private func applyDebugLaunchArguments() {
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "-demoRPM"), index + 1 < arguments.count,
+           let rpm = Double(arguments[index + 1]) {
+            connection.startDemo()
+            connection.setDemoMode(.manual)
+            connection.setDemoManualRPM(rpm)
+        }
+        #endif
     }
 
     // MARK: - Einstellungen

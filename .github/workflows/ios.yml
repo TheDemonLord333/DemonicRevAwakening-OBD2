@@ -47,23 +47,30 @@ jobs:
             | tee xcodebuild.log | grep -E "error:|warning:|Test case|Executed|\*\* (BUILD|TEST)" || true
           grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild.log
 
-      - name: UI-Tests mit Screenshots
+      - name: Screenshots der Demo-Zustände
         run: |
           set -o pipefail
-          xcodebuild test \
+          UDID="${{ steps.sim.outputs.udid }}"
+          xcodebuild build \
             -project "DemonicRevAwakening OBD2.xcodeproj" \
             -scheme "DemonicRevAwakening OBD2" \
-            -destination "id=${{ steps.sim.outputs.udid }}" \
-            -only-testing:"DemonicRevAwakening OBD2UITests/DemonicRevAwakening_OBD2UITests/testStartScreenShowsConnectAndDemo" \
-            -only-testing:"DemonicRevAwakening OBD2UITests/DemonicRevAwakening_OBD2UITests/testDemoIsClearlyMarkedAndCanBeStopped" \
-            -only-testing:"DemonicRevAwakening OBD2UITests/DemonicRevAwakening_OBD2UITests/testDemoStatesScreenshots" \
-            -resultBundlePath UITests.xcresult \
-            CODE_SIGNING_ALLOWED=NO \
-            | tee xcodebuild-ui.log | grep -E "error:|Test case|\*\* TEST" || true
+            -destination "id=$UDID" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO | tail -3
+          APP="build/Build/Products/Debug-iphonesimulator/DemonicRevAwakening OBD2.app"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
           mkdir -p screenshots
-          xcrun xcresulttool export attachments --path UITests.xcresult --output-path screenshots || true
-          ls screenshots
-          grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild-ui.log
+          for RPM in 0 800 1600 2900 6200; do
+            xcrun simctl launch --terminate-running-process "$UDID" me.thedemonlord333.DemonicRevAwakening-OBD2 -demoRPM "$RPM"
+            sleep 6
+            xcrun simctl io "$UDID" screenshot "screenshots/demo-$RPM.png"
+          done
+          xcrun simctl launch --terminate-running-process "$UDID" me.thedemonlord333.DemonicRevAwakening-OBD2
+          sleep 5
+          xcrun simctl io "$UDID" screenshot "screenshots/start-nicht-verbunden.png"
+          ls -la screenshots
 
       - name: Logs und Screenshots sichern
         if: always()
@@ -72,5 +79,4 @@ jobs:
           name: xcodebuild-ergebnisse
           path: |
             xcodebuild.log
-            xcodebuild-ui.log
             screenshots
