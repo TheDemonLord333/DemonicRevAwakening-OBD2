@@ -93,7 +93,7 @@ enum DemonArtwork {
         let mouth: SKTexture
         let softDot: SKTexture
         let spark: SKTexture
-        let wisp: SKTexture
+        let flame: SKTexture
     }
 
     /// Erzeugt alle Texturen einmalig. Auflösung 2× der Entwurfseinheiten.
@@ -122,7 +122,7 @@ enum DemonArtwork {
                 radialFill(context, center: CGPoint(x: 8, y: 8), radius: 8,
                            colors: [UIColor.white, UIColor.white.withAlphaComponent(0)], locations: [0, 1])
             },
-            wisp: render(CGSize(width: 48, height: 96), scale: 2, drawWisp)
+            flame: render(CGSize(width: 64, height: 128), scale: 2, drawFlame)
         )
     }
 
@@ -586,14 +586,15 @@ enum DemonArtwork {
 
     // MARK: - Partikel
 
-    /// Weiche, nach oben ausgezogene Flammenzunge für die Energieaura.
-    private static func drawWisp(_ context: CGContext) {
-        let path = CGMutablePath()
-        path.move(to: CGPoint(x: 24, y: 2))
-        path.addCurve(to: CGPoint(x: 24, y: 94), control1: CGPoint(x: 44, y: 40), control2: CGPoint(x: 46, y: 80))
-        path.addCurve(to: CGPoint(x: 24, y: 2), control1: CGPoint(x: 2, y: 80), control2: CGPoint(x: 6, y: 40))
-        path.closeSubpath()
-        fill(context, path, from: CGPoint(x: 24, y: 94), to: CGPoint(x: 24, y: 2),
-             colors: [UIColor.white.withAlphaComponent(0.9), UIColor.white.withAlphaComponent(0)], locations: [0, 1])
+    /// Weiche, senkrecht gestreckte Leuchtzunge ohne harte Kanten.
+    private static func drawFlame(_ context: CGContext) {
+        context.saveGState()
+        context.translateBy(x: 32, y: 64)
+        context.scaleBy(x: 1, y: 2)
+        radialFill(context, center: .zero, radius: 30,
+                   colors: [UIColor.white.withAlphaComponent(0.95), UIColor.white.withAlphaComponent(0.4),
+                            UIColor.white.withAlphaComponent(0)],
+                   locations: [0, 0.4, 1])
+        context.restoreGState()
     }
 }

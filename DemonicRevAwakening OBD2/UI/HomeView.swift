@@ -271,9 +271,10 @@ struct HomeView: View {
                     Button {
                         connection.stopDemo()
                     } label: {
-                        Label("Demo beenden", systemImage: "stop.fill")
+                        Label("Beenden", systemImage: "stop.circle")
                     }
                     .buttonStyle(DemonButtonStyle(kind: .secondary))
+                    .accessibilityLabel("Demo beenden")
                 }
                 Button {
                     isFocusMode = true

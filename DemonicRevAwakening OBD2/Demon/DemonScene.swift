@@ -138,17 +138,17 @@ final class DemonScene: SKScene {
         auraNode.position = CGPoint(x: 0, y: 30)
         auraNode.zPosition = -20
         root.addChild(auraNode)
-        auraOuter = glowSprite(textures.softDot, color: Palette.violet, size: 1_150)
+        auraOuter = glowSprite(textures.softDot, color: Palette.violet, size: 820)
         auraNode.addChild(auraOuter)
-        auraInner = glowSprite(textures.softDot, color: Palette.green, size: 760)
+        auraInner = glowSprite(textures.softDot, color: Palette.green, size: 560)
         auraInner.zPosition = 1
         auraNode.addChild(auraInner)
 
-        flamesViolet = makeFlames(texture: textures.wisp, colors: [Palette.blurple, Palette.violet, Palette.deepViolet])
+        flamesViolet = makeFlames(texture: textures.flame, colors: [Palette.blurple, Palette.violet, Palette.deepViolet])
         flamesViolet.position = CGPoint(x: 0, y: -230)
         flamesViolet.zPosition = -8
         root.addChild(flamesViolet)
-        flamesGreen = makeFlames(texture: textures.wisp, colors: [Palette.paleGreen, Palette.neonGreen, Palette.green])
+        flamesGreen = makeFlames(texture: textures.flame, colors: [Palette.paleGreen, Palette.neonGreen, Palette.green])
         flamesGreen.position = CGPoint(x: 0, y: -250)
         flamesGreen.zPosition = -7
         root.addChild(flamesGreen)
@@ -255,9 +255,8 @@ final class DemonScene: SKScene {
         embers.zPosition = 20
         root.addChild(embers)
 
-        flamesGreen.targetNode = root
-        flamesViolet.targetNode = root
-        embers.targetNode = root
+        // Emitter bewegen sich nicht; ohne targetNode gilt ihre eigene z-Ebene
+        // (Flammen hinter dem Körper, Funken davor).
 
         dimmableSprites = [head, body] + horns + ears + brows
         applyAmbientSettings()
@@ -275,21 +274,21 @@ final class DemonScene: SKScene {
         let emitter = SKEmitterNode()
         emitter.particleTexture = texture
         emitter.particleBirthRate = 0
-        emitter.particleLifetime = 1.7
-        emitter.particleLifetimeRange = 0.8
+        emitter.particleLifetime = 1.5
+        emitter.particleLifetimeRange = 0.7
         emitter.particlePositionRange = CGVector(dx: 470, dy: 50)
         emitter.emissionAngle = .pi / 2
         emitter.emissionAngleRange = 0.35
         emitter.particleSpeed = 70
         emitter.particleSpeedRange = 40
         emitter.yAcceleration = 35
-        emitter.particleAlpha = 0.5
-        emitter.particleAlphaRange = 0.2
-        emitter.particleAlphaSpeed = -0.3
-        emitter.particleScale = 0.75
-        emitter.particleScaleRange = 0.35
-        emitter.particleScaleSpeed = 0.2
-        emitter.particleRotationRange = 0.5
+        emitter.particleAlpha = 0.32
+        emitter.particleAlphaRange = 0.12
+        emitter.particleAlphaSpeed = -0.22
+        emitter.particleScale = 0.9
+        emitter.particleScaleRange = 0.4
+        emitter.particleScaleSpeed = -0.25
+        emitter.particleRotationRange = 0.25
         emitter.particleColorBlendFactor = 1
         emitter.particleBlendMode = .add
         emitter.particleColorSequence = SKKeyframeSequence(
@@ -480,8 +479,8 @@ final class DemonScene: SKScene {
         // Partikel.
         let particleFactor = settings.particleStrength * (settings.reducedEffects ? 0.3 : 1)
         let flameEnergy = pow(max(0, energy - 0.05), 1.3)
-        flamesGreen.particleBirthRate = CGFloat((flameEnergy * 55 + frame.surge * 40) * particleFactor)
-        flamesViolet.particleBirthRate = CGFloat((0.1 + flameEnergy) * 45 * particleFactor)
+        flamesGreen.particleBirthRate = CGFloat((flameEnergy * 80 + frame.surge * 50) * particleFactor)
+        flamesViolet.particleBirthRate = CGFloat((0.1 + flameEnergy) * 65 * particleFactor)
         flamesGreen.particleSpeed = CGFloat(50 + 110 * energy)
         flamesViolet.particleSpeed = CGFloat(40 + 90 * energy)
         let emberRate = max(0, energy - 0.3) * 45 + frame.surge * 25
