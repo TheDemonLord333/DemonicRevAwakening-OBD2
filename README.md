@@ -6,6 +6,17 @@ der mit der **echten Motordrehzahl** deines Autos erwacht. Die Drehzahl liest di
 steigender Drehzahl öffnet er die Augen, die Augen glühen neongrün, die Hörner leuchten
 blau-violett und eine Energieaura wächst.
 
+| Schläft (0 RPM) | Erwacht (1.600 RPM) | Entfesselt (6.200 RPM) |
+|---|---|---|
+| ![Schlafender Dämon](docs/screenshots/vollbild-schlaeft.jpg) | ![Erwachender Dämon](docs/screenshots/vollbild-erwacht.jpg) | ![Entfesselter Dämon](docs/screenshots/vollbild-entfesselt.jpg) |
+
+*Echte Screenshots aus dem iOS-Simulator (iPhone 17 Pro, Xcode 26.6), Demo-Modus,
+reduzierter Vollbildmodus. Erzeugt vom CI-Workflow.*
+
+| Startbildschirm ohne Verbindung | Demo, manuell 2.900 RPM |
+|---|---|
+| ![Start](docs/screenshots/start-nicht-verbunden.jpg) | ![Demo](docs/screenshots/start-demo-wach.jpg) |
+
 - Anzeigename: **Demonic RevAwakening**
 - Bundle-ID: `me.thedemonlord333.DemonicRevAwakening-OBD2`
 - Swift-Modul: `DemonicRevAwakening_OBD2`
@@ -29,8 +40,19 @@ xcodebuild test -project "DemonicRevAwakening OBD2.xcodeproj" \
   -only-testing:"DemonicRevAwakening OBD2Tests" CODE_SIGNING_ALLOWED=NO
 ```
 
-Der Workflow `.github/workflows/ios.yml` führt Build und Unit-Tests bei jedem Push auf
-einem macOS-Runner aus.
+Der Workflow `.github/workflows/ios.yml` läuft bei jedem Push auf einem macOS-Runner. Er
+baut die App, führt die Unit-Tests aus und erstellt Simulator-Screenshots der
+Demo-Zustände über `simctl`.
+
+Startargumente, die nur im Debug-Build wirken (für reproduzierbare Screenshots):
+
+- `-demoRPM <Wert>` startet die manuelle Demo mit fester Drehzahl.
+- `-focus` startet im reduzierten Vollbildmodus.
+
+Die UI-Tests in `DemonicRevAwakening OBD2UITests` laufen lokal in Xcode. Sie sind
+bewusst nicht Teil des CI-Laufs. Die ständig laufende SpriteKit-Animation lässt XCUITest
+lange auf einen Ruhezustand der App warten. Auf dem CI-Runner führte das zu Läufen bis zum
+Timeout.
 
 ## Signing mit deinem Apple-Developer-Team
 
@@ -75,7 +97,7 @@ Die Demo funktioniert ohne Adapter und im Simulator.
 Die Schwellen sind reine Animationswerte. Es sind keine empfohlenen Drehzahlen und keine
 Motorschutzgrenzen. Diese Mechanismen sorgen für ruhige Übergänge:
 
-- ±80 RPM Hysterese
+- Hysteresebreite 160 RPM (±80 RPM um jede Schwelle)
 - 0,45 s Mindestverweildauer
 - zeitbasierte exponentielle Glättung, beim Anstieg schneller als beim Abfall
 

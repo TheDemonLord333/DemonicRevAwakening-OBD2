@@ -99,20 +99,20 @@ enum DemonArtwork {
     /// Erzeugt alle Texturen einmalig. Auflösung 2× der Entwurfseinheiten.
     static func makeTextures(scale: CGFloat = 2) -> Textures {
         Textures(
-            head: render(headSize, scale: scale, drawHead),
-            horn: render(hornSize, scale: scale, drawHorn),
-            hornGlow: render(hornSize, scale: scale, drawHornGlow),
-            ear: render(earSize, scale: scale, drawEar),
-            body: render(bodySize, scale: scale, drawBody),
-            eyeball: render(eyeSize, scale: scale * 1.5, drawEyeball),
+            head: render(headSize, scale: scale) { drawHead($0) },
+            horn: render(hornSize, scale: scale) { drawHorn($0) },
+            hornGlow: render(hornSize, scale: scale) { drawHornGlow($0) },
+            ear: render(earSize, scale: scale) { drawEar($0) },
+            body: render(bodySize, scale: scale) { drawBody($0) },
+            eyeball: render(eyeSize, scale: scale * 1.5) { drawEyeball($0) },
             eyeMask: render(eyeSize, scale: scale * 1.5) { context in
                 context.addPath(eyePath())
                 context.setFillColor(UIColor.white.cgColor)
                 context.fillPath()
             },
-            lid: render(lidSize, scale: scale * 1.5, drawLid),
-            brow: render(browSize, scale: scale, drawBrow),
-            mouth: render(mouthSize, scale: scale, drawMouth),
+            lid: render(lidSize, scale: scale * 1.5) { drawLid($0) },
+            brow: render(browSize, scale: scale) { drawBrow($0) },
+            mouth: render(mouthSize, scale: scale) { drawMouth($0) },
             softDot: render(CGSize(width: 64, height: 64), scale: 2) { context in
                 radialFill(context, center: CGPoint(x: 32, y: 32), radius: 32,
                            colors: [UIColor.white, UIColor.white.withAlphaComponent(0.45), UIColor.white.withAlphaComponent(0)],
@@ -122,13 +122,13 @@ enum DemonArtwork {
                 radialFill(context, center: CGPoint(x: 8, y: 8), radius: 8,
                            colors: [UIColor.white, UIColor.white.withAlphaComponent(0)], locations: [0, 1])
             },
-            flame: render(CGSize(width: 64, height: 128), scale: 2, drawFlame)
+            flame: render(CGSize(width: 64, height: 128), scale: 2) { drawFlame($0) }
         )
     }
 
     /// Zeichnet synchron in einen eigenen Bitmap-Kontext mit UIKit-Koordinaten
     /// (Ursprung oben links), damit alles auf dem MainActor bleibt.
-    private static func render(_ size: CGSize, scale: CGFloat, _ draw: @MainActor (CGContext) -> Void) -> SKTexture {
+    private static func render(_ size: CGSize, scale: CGFloat, _ draw: (CGContext) -> Void) -> SKTexture {
         let width = Int((size.width * scale).rounded(.up))
         let height = Int((size.height * scale).rounded(.up))
         guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8,
