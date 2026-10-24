@@ -207,6 +207,10 @@ struct HomeView: View {
                 ConnectionStatusPill()
                 Spacer(minLength: 0)
             }
+            HStack {
+                AdapterInfoLine()
+                Spacer(minLength: 0)
+            }
             if model.connection.mode == .demo {
                 HStack {
                     DemoBadge()

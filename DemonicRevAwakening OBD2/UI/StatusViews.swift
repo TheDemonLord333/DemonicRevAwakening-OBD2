@@ -70,6 +70,25 @@ struct ConnectionStatusPill: View {
     }
 }
 
+/// Adapterkennung und Protokoll einer Live-Verbindung (hilfreich beim Hardwaretest).
+struct AdapterInfoLine: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        if model.connection.mode == .live, let info = model.connection.adapterInfo {
+            let parts = [info.identity, info.protocolName].compactMap { $0 }.filter { !$0.isEmpty }
+            if !parts.isEmpty {
+                Text(parts.joined(separator: " · "))
+                    .font(.caption)
+                    .foregroundStyle(Theme.textTertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .accessibilityLabel("Adapter: \(parts.joined(separator: ", "))")
+            }
+        }
+    }
+}
+
 /// Deutlich sichtbare Kennzeichnung des Demo-Modus.
 struct DemoBadge: View {
     var body: some View {
