@@ -47,9 +47,30 @@ jobs:
             | tee xcodebuild.log | grep -E "error:|warning:|Test case|Executed|\*\* (BUILD|TEST)" || true
           grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild.log
 
-      - name: Build-Log sichern
+      - name: UI-Tests mit Screenshots
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project "DemonicRevAwakening OBD2.xcodeproj" \
+            -scheme "DemonicRevAwakening OBD2" \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:"DemonicRevAwakening OBD2UITests/DemonicRevAwakening_OBD2UITests/testStartScreenShowsConnectAndDemo" \
+            -only-testing:"DemonicRevAwakening OBD2UITests/DemonicRevAwakening_OBD2UITests/testDemoIsClearlyMarkedAndCanBeStopped" \
+            -only-testing:"DemonicRevAwakening OBD2UITests/DemonicRevAwakening_OBD2UITests/testDemoStatesScreenshots" \
+            -resultBundlePath UITests.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee xcodebuild-ui.log | grep -E "error:|Test case|\*\* TEST" || true
+          mkdir -p screenshots
+          xcrun xcresulttool export attachments --path UITests.xcresult --output-path screenshots || true
+          ls screenshots
+          grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild-ui.log
+
+      - name: Logs und Screenshots sichern
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: xcodebuild-log
-          path: xcodebuild.log
+          name: xcodebuild-ergebnisse
+          path: |
+            xcodebuild.log
+            xcodebuild-ui.log
+            screenshots

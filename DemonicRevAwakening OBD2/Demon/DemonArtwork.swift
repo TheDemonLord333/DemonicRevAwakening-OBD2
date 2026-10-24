@@ -126,14 +126,21 @@ enum DemonArtwork {
         )
     }
 
+    /// Zeichnet synchron in einen eigenen Bitmap-Kontext mit UIKit-Koordinaten
+    /// (Ursprung oben links), damit alles auf dem MainActor bleibt.
     private static func render(_ size: CGSize, scale: CGFloat, _ draw: (CGContext) -> Void) -> SKTexture {
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = scale
-        format.opaque = false
-        let image = UIGraphicsImageRenderer(size: size, format: format).image { rendererContext in
-            draw(rendererContext.cgContext)
+        let width = Int((size.width * scale).rounded(.up))
+        let height = Int((size.height * scale).rounded(.up))
+        guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8,
+                                      bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+            return SKTexture()
         }
-        let texture = SKTexture(image: image)
+        context.translateBy(x: 0, y: CGFloat(height))
+        context.scaleBy(x: scale, y: -scale)
+        draw(context)
+        guard let image = context.makeImage() else { return SKTexture() }
+        let texture = SKTexture(cgImage: image)
         texture.filteringMode = .linear
         return texture
     }
