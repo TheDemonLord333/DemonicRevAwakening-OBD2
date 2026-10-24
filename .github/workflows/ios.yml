@@ -1,0 +1,55 @@
+name: iOS Build & Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Neueste Xcode-26-Version wählen
+        run: |
+          ls -d /Applications/Xcode*.app
+          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+          xcodebuild -list -project "DemonicRevAwakening OBD2.xcodeproj"
+
+      - name: Simulator ermitteln
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)["devices"]
+          ios = sorted([k for k in data if "iOS" in k], reverse=True)
+          for runtime in ios:
+              for d in data[runtime]:
+                  if d["name"].startswith("iPhone"):
+                      print(d["udid"]); sys.exit(0)
+          ')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Simulator: $UDID"
+
+      - name: Build und Unit-Tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project "DemonicRevAwakening OBD2.xcodeproj" \
+            -scheme "DemonicRevAwakening OBD2" \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:"DemonicRevAwakening OBD2Tests" \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee xcodebuild.log | grep -E "error:|warning:|Test case|Executed|\*\* (BUILD|TEST)" || true
+          grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild.log
+
+      - name: Build-Log sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log

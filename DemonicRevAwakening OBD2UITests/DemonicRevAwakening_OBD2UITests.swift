@@ -2,38 +2,40 @@
 //  DemonicRevAwakening_OBD2UITests.swift
 //  DemonicRevAwakening OBD2UITests
 //
-//  Created by David Martens on 24.10.26.
-//
 
 import XCTest
 
 final class DemonicRevAwakening_OBD2UITests: XCTestCase {
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testStartScreenShowsConnectAndDemo() throws {
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        XCTAssertTrue(app.buttons["Verbinden"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Demo"].exists)
+        XCTAssertTrue(app.staticTexts["Nicht verbunden"].exists || app.otherElements["Verbindungsstatus: Nicht verbunden"].exists)
+    }
+
+    @MainActor
+    func testDemoIsClearlyMarkedAndCanBeStopped() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        app.buttons["Demo"].tap()
+        let badge = app.staticTexts["Demo-Modus aktiv: simulierte Fahrzeugdaten"]
+        XCTAssertTrue(badge.waitForExistence(timeout: 5) || app.otherElements["Demo-Modus aktiv: simulierte Fahrzeugdaten"].exists)
+
+        app.buttons["Demo beenden"].tap()
+        XCTAssertTrue(app.buttons["Demo"].waitForExistence(timeout: 5))
     }
 
     @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             XCUIApplication().launch()
         }

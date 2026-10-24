@@ -22,8 +22,10 @@ final class DemonicRevAwakening_OBD2UITestsLaunchTests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        // Insert steps here to perform after app launch but before taking a screenshot,
-        // such as logging into a test account or navigating somewhere in the app
+        // Demo starten, damit der Screenshot den erwachenden Dämon zeigt.
+        if app.buttons["Demo"].waitForExistence(timeout: 5) {
+            app.buttons["Demo"].tap()
+        }
 
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch Screen"
