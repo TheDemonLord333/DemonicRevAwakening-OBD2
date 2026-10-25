@@ -1,0 +1,96 @@
+name: iOS Build & Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Neueste Xcode-26-Version wählen
+        run: |
+          ls -d /Applications/Xcode*.app
+          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+          xcodebuild -list -project "DemonicRevAwakening OBD2.xcodeproj"
+
+      - name: Simulator ermitteln
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)["devices"]
+          ios = sorted([k for k in data if "iOS" in k], reverse=True)
+          for runtime in ios:
+              for d in data[runtime]:
+                  if d["name"].startswith("iPhone"):
+                      print(d["udid"]); sys.exit(0)
+          ')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Simulator: $UDID"
+
+      - name: Build und Unit-Tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project "DemonicRevAwakening OBD2.xcodeproj" \
+            -scheme "DemonicRevAwakening OBD2" \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:"DemonicRevAwakening OBD2Tests" \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee xcodebuild.log | grep -E "error:|warning:|Test case|Executed|\*\* (BUILD|TEST)" || true
+          grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild.log
+
+      - name: Screenshots der Demo-Zustände
+        run: |
+          set -o pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          xcodebuild build \
+            -project "DemonicRevAwakening OBD2.xcodeproj" \
+            -scheme "DemonicRevAwakening OBD2" \
+            -destination "id=$UDID" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO | tail -3
+          APP="build/Build/Products/Debug-iphonesimulator/DemonicRevAwakening OBD2.app"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          mkdir -p screenshots
+          for RPM in 0 800 1600 2900 6200; do
+            xcrun simctl launch --terminate-running-process "$UDID" me.thedemonlord333.DemonicRevAwakening-OBD2 -demoRPM "$RPM"
+            sleep 6
+            xcrun simctl io "$UDID" screenshot "screenshots/demo-$RPM.png"
+          done
+          xcrun simctl launch --terminate-running-process "$UDID" me.thedemonlord333.DemonicRevAwakening-OBD2
+          sleep 5
+          xcrun simctl io "$UDID" screenshot "screenshots/start-nicht-verbunden.png"
+          for RPM in 0 1600 6200; do
+            xcrun simctl launch --terminate-running-process "$UDID" me.thedemonlord333.DemonicRevAwakening-OBD2 -demoRPM "$RPM" -focus
+            sleep 6
+            xcrun simctl io "$UDID" screenshot "screenshots/vollbild-$RPM.png"
+          done
+          ls -la screenshots
+          # Kleine JPEG-Vorschauen als Base64 ins Log (für Umgebungen ohne Artefakt-Zugriff).
+          for f in screenshots/*.png; do
+            SIZE=420
+            case "$f" in *vollbild*) SIZE=900 ;; esac
+            sips -s format jpeg -s formatOptions 60 -Z "$SIZE" "$f" --out "${f%.png}.jpg" >/dev/null
+            echo "BEGIN-SCREENSHOT $(basename "${f%.png}")"
+            base64 -i "${f%.png}.jpg" | fold -w 900
+            echo "END-SCREENSHOT"
+          done
+
+      - name: Logs und Screenshots sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-ergebnisse
+          path: |
+            xcodebuild.log
+            screenshots
